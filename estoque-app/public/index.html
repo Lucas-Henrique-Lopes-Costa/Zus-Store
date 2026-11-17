@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b2420">
+<title>Zus Estoque</title>
+<style>
+  :root { --bg:#f6f2ee; --card:#fff; --ink:#2b2420; --muted:#7a6f68; --line:#e6ded7; --brand:#a0764f; --ok:#2f7d4f; --err:#b3412f; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--ink); padding-bottom:80px; }
+  header { position:sticky; top:0; z-index:5; background:var(--ink); color:#fff; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; }
+  header b { letter-spacing:.12em; }
+  main { max-width:560px; margin:0 auto; padding:16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:14px; }
+  h2 { font-size:15px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin:0 0 10px; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  input, select, textarea { width:100%; font:inherit; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--ink); }
+  textarea { min-height:90px; }
+  button { font:inherit; font-weight:600; border:0; border-radius:10px; padding:13px 16px; cursor:pointer; background:var(--ink); color:#fff; }
+  button.sec { background:#efe8e1; color:var(--ink); }
+  button.full { width:100%; }
+  button:disabled { opacity:.5; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .row > * { flex:1; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .chip { padding:7px 11px; border-radius:20px; background:#efe8e1; font-size:14px; border:0; color:var(--ink); font-weight:500; }
+  .fotos { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+  .fotos img { width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:10px; }
+  .var { display:grid; grid-template-columns:1.3fr 1fr .7fr auto; gap:6px; margin-top:6px; }
+  .var input { padding:10px; }
+  .x { background:transparent; color:var(--err); padding:0 6px; font-size:22px; }
+  .tabs { position:fixed; bottom:0; left:0; right:0; display:flex; background:#fff; border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); z-index:5; }
+  .tabs button { flex:1; background:transparent; color:var(--muted); border-radius:0; padding:16px; }
+  .tabs button.on { color:var(--ink); box-shadow:inset 0 3px 0 var(--brand); }
+  .msg { padding:12px; border-radius:10px; margin:10px 0; }
+  .msg.ok { background:#e5f3ea; color:var(--ok); } .msg.err { background:#f8e4e0; color:var(--err); }
+  .res { display:flex; gap:12px; }
+  .res img { width:84px; height:112px; object-fit:cover; border-radius:8px; background:#eee; }
+  .muted { color:var(--muted); font-size:14px; }
+  .switch { display:flex; align-items:center; gap:10px; margin-top:12px; }
+  .switch input { width:auto; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<header><b>ZUS · ESTOQUE</b><span id="st" class="muted" style="color:#cbbfb5"></span></header>
+
+<main id="login" class="hidden">
+  <div class="card">
+    <h2>Entrar</h2>
+    <label>Senha</label>
+    <input id="senha" type="password" autocomplete="current-password">
+    <div style="height:12px"></div>
+    <button class="full" id="btnLogin">Entrar</button>
+    <div id="loginMsg"></div>
+  </div>
+</main>
+
+<main id="cadastro" class="hidden">
+  <div class="card">
+    <h2>1. Fotos</h2>
+    <input id="fotos" type="file" accept="image/*" capture="environment" multiple class="hidden">
+    <div class="row">
+      <button class="sec" onclick="fotos.click()">📷 Tirar / escolher foto</button>
+    </div>
+    <div class="fotos" id="preview"></div>
+    <p class="muted">A 1ª foto é a capa. Fundo liso e boa luz vendem mais.</p>
+  </div>
+
+  <div class="card">
+    <h2>2. Produto</h2>
+    <label>Dica para a IA (opcional): marca, tecido…</label>
+    <input id="dica" placeholder="ex.: marca Germana Vargas, linho">
+    <div style="height:8px"></div>
+    <button class="sec full" id="btnIA">✨ Gerar nome e descrição pela foto</button>
+    <label>Nome do produto *</label>
+    <input id="nome">
+    <label>Marca</label>
+    <input id="marca">
+    <label>Preço (R$) *</label>
+    <input id="preco" inputmode="decimal" placeholder="129,90">
+    <label>Categoria</label>
+    <select id="categoria"><option value="">Carregando…</option></select>
+    <label>Descrição</label>
+    <textarea id="descricao"></textarea>
+  </div>
+
+  <div class="card">
+    <h2>3. Variações e quantidade</h2>
+    <p class="muted">Toque nos tamanhos para adicionar. Deixe a cor vazia se for só uma.</p>
+    <div class="chips" id="chipsTam"></div>
+    <div id="vars"></div>
+    <div style="height:8px"></div>
+    <button class="sec full" onclick="addVar()">+ Adicionar linha</button>
+  </div>
+
+  <div class="card">
+    <h2>4. Localização na loja</h2>
+    <input id="local" placeholder="ex.: ARARA A2, ESTOQUE CX3" list="locais">
+    <datalist id="locais"></datalist>
+    <div class="switch"><input type="checkbox" id="publicar" checked><span>Publicar na loja online agora</span></div>
+  </div>
+
+  <div id="cadMsg"></div>
+  <button class="full" id="btnSalvar">Cadastrar e gerar etiquetas</button>
+</main>
+
+<main id="buscar" class="hidden">
+  <div class="card">
+    <h2>Buscar peça</h2>
+    <div class="row"><input id="q" placeholder="Nome, SKU ou bipe o código"><button style="flex:0" id="btnBuscar">🔍</button></div>
+  </div>
+  <div id="resultados"></div>
+</main>
+
+<nav class="tabs hidden" id="tabs">
+  <button data-t="cadastro" class="on">＋ Cadastrar</button>
+  <button data-t="buscar">🔍 Buscar</button>
+</nav>
+
+<script src="app.js"></script>
+</body>
+</html>
